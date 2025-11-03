@@ -4,13 +4,12 @@ from os import path
 
 class ToDoGenConan(ConanFile):
     name = "todogen"
-    license = "S&B Licence"
+    license = "MIT"
     settings = {}
     description = "ToDo Generator"
-    author = "Scheidt & Bachmann GmbH"
-    homepage = "www.scheidt-bachmann.de"
-    url = "https://git.ads.local/krupa.tomas/todogen"
-    exports_sources = "todogen*"
+    author = "Tomas Krupa"
+    url = "https://github.com/tomas-krupa/todogen/"
+    exports_sources = "todogen*", "../todogen.py"
 
     def set_version(self):
         self.version = tools.Git().run("describe --tags --abbrev=0")

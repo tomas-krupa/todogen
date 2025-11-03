@@ -7,7 +7,9 @@ set(TODOGEN_FOUND TRUE)
 function(update_todos)
   set(options)
   set(oneValueArgs TARGET README SOURCE_DIR)
-  cmake_parse_arguments(UPDATE_TODOS "${options}" "${oneValueArgs}" "" ${ARGN})
+  set(multiValueArgs SOURCE_DIRS)
+  cmake_parse_arguments(UPDATE_TODOS "${options}" "${oneValueArgs}"
+                        "${multiValueArgs}" ${ARGN})
 
   if(NOT UPDATE_TODOS_TARGET)
     message(FATAL_ERROR "TARGET argument is required")
@@ -17,8 +19,12 @@ function(update_todos)
     message(FATAL_ERROR "README argument is required")
   endif()
 
-  if(NOT UPDATE_TODOS_SOURCE_DIR)
-    message(FATAL_ERROR "SOURCE_DIR argument is required")
+  if(NOT UPDATE_TODOS_SOURCE_DIR AND NOT UPDATE_TODOS_SOURCE_DIRS)
+    message(FATAL_ERROR "SOURCE_DIR or SOURCE_DIRS argument is required")
+  endif()
+
+  if(NOT UPDATE_TODOS_SOURCE_DIR AND NOT UPDATE_TODOS_SOURCE_DIRS)
+    list(APPEND UPDATE_TODOS_SOURCE_DIR "${UPDATE_TODOS_SOURCE_DIRS}")
   endif()
 
   add_custom_target(

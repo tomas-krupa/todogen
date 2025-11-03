@@ -98,10 +98,9 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
-    # Parse command-line arguments
     args = parse_arguments()
 
     # Extensions to search (add more as needed)
-    file_extensions = ["*.txt", ".qml", ".cpp", ".h"]
+    file_extensions = ["*.txt", ".qml", ".cpp", ".h", ".java", ".kt"]
     todos = find_todos_in_files(args.src, file_extensions)
     append_todos_to_readme(args.readme, todos)

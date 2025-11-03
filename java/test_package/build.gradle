@@ -1,0 +1,16 @@
+buildscript {
+    repositories { mavenLocal() }
+    dependencies {
+        // artifactId is fixed to 'todogen'
+        classpath "${project.property('GROUP')}:todogen:${project.property('VERSION')}"
+    }
+}
+
+// Read project properties from local gradle.properties (copied by the root task)
+apply plugin: "${project.property('GROUP')}.todogen"
+apply plugin: 'java'
+
+todogen {
+    srcDir = file("$rootDir")
+    readme = file("$rootDir/README.md")
+}

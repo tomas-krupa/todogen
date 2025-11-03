@@ -1,0 +1,113 @@
+plugins {
+    id 'groovy'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group   = project.property('GROUP')
+
+version = providers.exec {
+    commandLine 'git', 'describe', '--tags', '--abbrev=0'
+}.standardOutput.asText.get().trim()
+
+dependencies {
+    implementation localGroovy()
+    implementation gradleApi()
+}
+
+gradlePlugin {
+    automatedPublishing = false
+    plugins {
+        todogen {
+            id = "${group}.todogen"
+            implementationClass = "todogen.TodoGenPlugin"
+            displayName = "TodoGen Gradle Plugin"
+            description = "Runs embedded todogen.py to collect TODOs into a README"
+        }
+    }
+}
+
+publishing {
+    publications {
+        todogen(MavenPublication) {
+            from components.java
+            groupId    = group
+            artifactId = 'todogen'
+            version    = project.version
+            pom {
+                name        = "TodoGen Gradle Plugin"
+                description = "Runs embedded todogen.py to collect TODOs into a README"
+                url         = "https://git.ads.local/krupa.tomas/todogen"
+                licenses { license { name = 'Apache-2.0'; url = 'https://www.apache.org/licenses/LICENSE-2.0' } }
+                scm { url = 'https://git.ads.local/krupa.tomas/todogen' }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "maven"
+            url = uri(project.property('ARTIFACTORY_URL'))
+            allowInsecureProtocol = true
+            credentials {
+                username = project.property('ARTIFACTORY_USER')
+                password = project.property('ARTIFACTORY_PASSWORD')
+            }
+        }
+    }
+}
+
+tasks.register('writeTestProps') {
+    doLast {
+        def props = new Properties()
+        file('gradle.properties').withInputStream { props.load(it) }
+        props.setProperty('VERSION', project.version.toString())
+        file('test_package/gradle.properties').withOutputStream { os -> props.store(os, null) }
+    }
+}
+tasks.register('create', Exec) {
+    dependsOn 'publishToMavenLocal', 'writeTestProps'
+    workingDir = file('test_package')
+    commandLine 'gradle', '--no-daemon', 'clean', 'build'
+}
+
+gradle.projectsEvaluated {
+    logger.lifecycle("→ Building coordinates: ${project.group}:todogen:${project.version}")
+}
+
+tasks.named('jar').configure {
+    doLast {
+        logger.lifecycle("✔ Built: ${project.group}:todogen:${project.version}")
+    }
+}
+
+tasks.named('publishToMavenLocal').configure {
+    doLast {
+        def home = System.getProperty("user.home")
+        def path = "${home}/.m2/repository/${project.group.toString().replace('.', '/')}/todogen/${project.version}"
+        logger.lifecycle("✔ Published to mavenLocal: ${project.group}:todogen:${project.version}")
+        logger.lifecycle("  ↳ ${path}")
+    }
+}
+
+tasks.matching { it.name == 'publish' }.configureEach {
+    doLast {
+        logger.lifecycle("✔ Published remotely: ${project.group}:todogen:${project.version} → ${project.property('ARTIFACTORY_URL')}")
+    }
+}
+
+// Put ../todogen.py into the plugin JAR under <group>/scripts/todogen.py
+def scriptFile = file('../todogen.py')
+def pkgPath = "${group.replace('.', '/')}/scripts"
+
+tasks.named('processResources').configure {
+    from(scriptFile) {
+        into pkgPath
+        rename { 'todogen.py' }
+    }
+    // re-run resources/jar when the script changes
+    inputs.file(scriptFile)
+}
+
+gradle.projectsEvaluated {
+    logger.lifecycle("• Packaging ${scriptFile.absolutePath} → ${pkgPath}/todogen.py")
+}

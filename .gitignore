@@ -1,0 +1,6 @@
+.gradle/
+build/
+.vs/
+.vscode/
+.idea/
+java/test_package/gradle.properties
